@@ -1,0 +1,600 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Gym Plan">
+  <meta name="theme-color" content="#0A0A0A">
+  <title>Gym Plan</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+    body {
+      background: #0A0A0A;
+      color: #DDD8CC;
+      font-family: Georgia, serif;
+      min-height: 100vh;
+      padding-bottom: env(safe-area-inset-bottom, 20px);
+    }
+    .app { max-width: 680px; margin: 0 auto; padding-bottom: 80px; }
+
+    /* Header */
+    .header {
+      padding: 48px 22px 18px;
+      border-bottom: 1px solid #1A1A1A;
+      padding-top: calc(env(safe-area-inset-top, 20px) + 28px);
+    }
+    .header-label { font-size: 9px; letter-spacing: 0.3em; color: #3A3A3A; font-family: monospace; margin-bottom: 8px; text-transform: uppercase; }
+    .header h1 { font-size: 30px; font-weight: 400; letter-spacing: -0.02em; line-height: 1; }
+    .header-sub { font-size: 12px; color: #444; margin-top: 6px; font-family: monospace; }
+
+    /* Tabs */
+    .tabs {
+      display: flex;
+      border-bottom: 1px solid #1A1A1A;
+      position: sticky;
+      top: 0;
+      background: #0A0A0A;
+      z-index: 100;
+    }
+    .tab-btn {
+      flex: 1; padding: 13px 0;
+      background: none; border: none;
+      border-bottom: 2px solid transparent;
+      color: #3A3A3A;
+      font-size: 9px; letter-spacing: 0.2em;
+      font-family: monospace; cursor: pointer;
+      transition: color 0.2s;
+    }
+    .tab-btn.active { color: var(--theme); border-bottom-color: var(--theme); }
+
+    /* Panels */
+    .panel { padding: 22px 20px; display: none; }
+    .panel.active { display: block; }
+
+    /* Day selector */
+    .day-selector { display: flex; gap: 8px; margin-bottom: 14px; }
+    .day-btn {
+      flex: 1; padding: 14px 8px;
+      background: #111; border: 1px solid #1E1E1E;
+      border-radius: 6px; color: #555;
+      font-family: monospace; font-size: 13px;
+      font-weight: 700; cursor: pointer;
+      transition: all 0.2s;
+    }
+    .day-btn .day-focus { font-size: 9px; margin-top: 4px; opacity: 0.7; font-weight: 400; display: block; }
+    .day-btn.active { color: #0A0A0A; }
+
+    /* Mode toggle */
+    .mode-toggle {
+      display: flex; margin-bottom: 22px;
+      border: 1px solid #1E1E1E; border-radius: 6px; overflow: hidden;
+    }
+    .mode-btn {
+      flex: 1; padding: 10px;
+      background: transparent; border: none;
+      color: #444; font-family: monospace;
+      font-size: 10px; letter-spacing: 0.15em;
+      cursor: pointer; transition: all 0.2s;
+    }
+    .mode-btn:first-child { border-right: 1px solid #1E1E1E; }
+    .mode-btn.active { background: #1A1A1A; color: var(--theme); }
+
+    /* Section label */
+    .section-label { font-size: 9px; letter-spacing: 0.2em; font-family: monospace; margin-bottom: 6px; }
+    .section-note { font-size: 12px; color: #555; font-style: italic; margin-bottom: 16px; line-height: 1.6; }
+
+    /* Exercise cards */
+    .ex-card {
+      background: #0F0F0F; border: 1px solid #161616;
+      border-radius: 6px; padding: 14px 16px;
+      margin-bottom: 5px; cursor: pointer;
+      transition: background 0.15s, border-color 0.15s;
+      user-select: none;
+    }
+    .ex-card.open { background: #141414; border-color: #252525; }
+    .ex-card-row { display: flex; justify-content: space-between; align-items: flex-start; }
+    .ex-name { font-size: 15px; color: #DDD8CC; }
+    .ex-muscles { font-size: 11px; color: #3A3A3A; font-family: monospace; margin-top: 3px; }
+    .ex-sets { font-size: 13px; font-family: monospace; font-weight: 700; text-align: right; flex-shrink: 0; margin-left: 12px; }
+    .ex-note {
+      margin-top: 12px; padding-top: 12px;
+      border-top: 1px solid #1A1A1A;
+      font-size: 13px; color: #888;
+      line-height: 1.7; font-style: italic;
+      display: none;
+    }
+    .ex-card.open .ex-note { display: block; }
+    .tap-hint { margin-top: 16px; font-size: 10px; color: #222; text-align: center; font-family: monospace; letter-spacing: 0.1em; }
+
+    /* Phase strip */
+    .phase-strip { display: flex; gap: 6px; margin-bottom: 24px; }
+    .phase-chip { flex: 1; background: #111; border: 1px solid #1A1A1A; border-radius: 6px; padding: 10px; }
+    .phase-chip-weeks { font-size: 9px; font-family: monospace; letter-spacing: 0.1em; }
+    .phase-chip-label { font-size: 11px; color: #AAA; margin-top: 4px; line-height: 1.4; }
+
+    /* Diary */
+    .diary-intro { font-size: 12px; color: #555; margin-bottom: 20px; line-height: 1.7; font-style: italic; }
+    .log-box { background: #0F0F0F; border: 1px solid #1A1A1A; border-radius: 8px; padding: 18px; margin-bottom: 26px; }
+    .log-label { font-size: 9px; color: #333; font-family: monospace; letter-spacing: 0.2em; margin-bottom: 14px; }
+    .log-row { display: flex; gap: 6px; margin-bottom: 10px; }
+    .log-day-btn, .log-mode-btn {
+      padding: 8px 18px;
+      background: #161616; border: 1px solid #1E1E1E;
+      border-radius: 4px; color: #444;
+      font-family: monospace; font-size: 12px;
+      font-weight: 700; cursor: pointer; transition: all 0.2s;
+    }
+    .log-mode-btn { font-size: 10px; font-weight: 400; margin-bottom: 14px; }
+    .feel-row { display: flex; gap: 5px; margin-bottom: 14px; }
+    .feel-btn {
+      flex: 1; padding: 8px 0;
+      background: #161616; border: 1px solid #1E1E1E;
+      border-radius: 4px; color: #333;
+      font-family: monospace; font-size: 9px;
+      cursor: pointer; transition: all 0.2s;
+    }
+    .diary-textarea {
+      width: 100%; background: #0A0A0A;
+      border: 1px solid #1A1A1A; border-radius: 4px;
+      color: #999; padding: 10px 12px;
+      font-size: 13px; font-family: Georgia, serif;
+      line-height: 1.6; resize: vertical;
+      min-height: 80px; outline: none;
+    }
+    .save-btn {
+      margin-top: 12px; width: 100%; padding: 12px;
+      background: #D4A843; border: none; border-radius: 4px;
+      color: #0A0A0A; font-family: monospace;
+      font-size: 11px; font-weight: 700;
+      letter-spacing: 0.15em; cursor: pointer;
+      transition: all 0.3s;
+    }
+    .save-btn.saved { background: #0F2A0F; color: #4CAF50; }
+    .diary-empty { text-align: center; color: #222; font-size: 13px; font-style: italic; padding: 40px 0; }
+    .diary-count { font-size: 9px; color: #333; font-family: monospace; letter-spacing: 0.2em; margin-bottom: 12px; }
+    .entry-card { background: #0F0F0F; border: 1px solid #161616; border-radius: 6px; padding: 13px 16px; margin-bottom: 7px; }
+    .entry-row { display: flex; justify-content: space-between; align-items: center; }
+    .entry-tags { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+    .entry-day-tag { font-family: monospace; font-size: 11px; font-weight: 700; padding: 2px 8px; border-radius: 3px; color: #0A0A0A; }
+    .entry-mode-tag { font-size: 10px; color: #333; font-family: monospace; background: #141414; padding: 2px 6px; border-radius: 3px; }
+    .entry-date { font-size: 11px; color: #333; font-family: monospace; }
+    .entry-feel { font-size: 10px; font-family: monospace; }
+    .entry-delete { background: none; border: none; color: #2A2A2A; cursor: pointer; font-size: 16px; padding: 0 4px; }
+    .entry-notes { font-size: 13px; color: #666; line-height: 1.6; font-style: italic; margin-top: 9px; }
+
+    /* Schedule */
+    .sched-intro { font-size: 12px; color: #555; margin-bottom: 20px; line-height: 1.7; font-style: italic; }
+    .rotation-box { background: #0F0F0F; border: 1px solid #1A1A1A; border-radius: 8px; padding: 20px; margin-bottom: 20px; }
+    .rotation-label { font-size: 9px; color: #333; font-family: monospace; letter-spacing: 0.2em; margin-bottom: 16px; }
+    .rotation-seq { font-size: 20px; color: #DDD8CC; letter-spacing: 0.05em; font-family: monospace; }
+    .rotation-detail { font-size: 12px; color: #555; margin-top: 14px; line-height: 1.8; }
+    .phases-label { font-size: 9px; color: #333; font-family: monospace; letter-spacing: 0.2em; margin-bottom: 12px; }
+    .phase-card {
+      background: #0F0F0F; border: 1px solid #1A1A1A;
+      border-radius: 6px; padding: 16px 18px;
+      margin-bottom: 10px; cursor: pointer;
+      transition: border-color 0.15s;
+    }
+    .phase-card.open { border-color: #2A2A2A; }
+    .phase-card-row { display: flex; justify-content: space-between; align-items: center; }
+    .phase-name { font-size: 13px; font-family: monospace; font-weight: 700; }
+    .phase-right { display: flex; gap: 12px; align-items: center; }
+    .phase-weeks { font-size: 10px; color: #444; font-family: monospace; }
+    .phase-arrow { font-size: 11px; color: #444; }
+    .phase-desc { font-size: 13px; color: #777; margin-top: 12px; line-height: 1.7; display: none; }
+    .phase-card.open .phase-desc { display: block; }
+    .protein-box { background: #0F0F0F; border: 1px solid #1A1A1A; border-radius: 8px; padding: 20px; margin-top: 8px; }
+    .protein-label { font-size: 9px; color: #333; font-family: monospace; letter-spacing: 0.2em; margin-bottom: 14px; }
+    .protein-number { font-size: 36px; color: #D4A843; font-family: monospace; font-weight: 700; }
+    .protein-sub { font-size: 12px; color: #555; margin-top: 6px; }
+    .protein-row { display: flex; justify-content: space-between; padding: 9px 0; border-bottom: 1px solid #141414; }
+    .protein-food { font-size: 13px; color: #888; }
+    .protein-g { font-size: 13px; color: #D4A843; font-family: monospace; font-weight: 700; }
+    .protein-total { font-size: 11px; color: #444; font-family: monospace; margin-top: 10px; }
+  </style>
+</head>
+<body>
+<div class="app">
+  <div class="header">
+    <div class="header-label">MyFitness Riga · Full Gym · Experienced</div>
+    <h1>3-Month Plan</h1>
+    <div class="header-sub">Push / Pull / Legs · 2–3× week · Gym + Calisthenics/KB</div>
+  </div>
+
+  <div class="tabs" id="tabs">
+    <button class="tab-btn active" onclick="switchTab('plan')">WORKOUTS</button>
+    <button class="tab-btn" onclick="switchTab('diary')" id="diary-tab-btn">DIARY</button>
+    <button class="tab-btn" onclick="switchTab('schedule')">SCHEDULE</button>
+  </div>
+
+  <!-- WORKOUTS PANEL -->
+  <div class="panel active" id="panel-plan">
+    <div class="phase-strip">
+      <div class="phase-chip"><div class="phase-chip-weeks" style="color:#D4A843">Weeks 1–4</div><div class="phase-chip-label">Load the Pattern</div></div>
+      <div class="phase-chip"><div class="phase-chip-weeks" style="color:#4A9ECC">Weeks 5–8</div><div class="phase-chip-label">Progressive Overload</div></div>
+      <div class="phase-chip"><div class="phase-chip-weeks" style="color:#CC4A4A">Weeks 9–12</div><div class="phase-chip-label">Push the Ceiling</div></div>
+    </div>
+
+    <div class="day-selector">
+      <button class="day-btn active" id="day-A" onclick="switchDay('A')" style="background:#D4A843;border-color:#D4A843">A<span class="day-focus">Push + Biceps</span></button>
+      <button class="day-btn" id="day-B" onclick="switchDay('B')">B<span class="day-focus">Pull + Rear Delt</span></button>
+      <button class="day-btn" id="day-C" onclick="switchDay('C')">C<span class="day-focus">Legs + Core</span></button>
+    </div>
+
+    <div class="mode-toggle">
+      <button class="mode-btn active" id="mode-gym" onclick="switchMode('gym')">🏋 GYM</button>
+      <button class="mode-btn" id="mode-alt" onclick="switchMode('alt')">🌲 CALISTHENICS + KB</button>
+    </div>
+
+    <div class="section-label" id="section-label"></div>
+    <div class="section-note" id="section-note"></div>
+    <div id="exercise-list"></div>
+    <div class="tap-hint">TAP EXERCISE FOR COACHING NOTES</div>
+  </div>
+
+  <!-- DIARY PANEL -->
+  <div class="panel" id="panel-diary">
+    <div class="diary-intro">Log every session. Note the weights and which version you did. Over 12 weeks this is your evidence that something is working.</div>
+
+    <div class="log-box">
+      <div class="log-label">LOG SESSION</div>
+      <div class="log-row" id="log-day-row">
+        <button class="log-day-btn active" id="log-day-A" onclick="setLogDay('A')">A</button>
+        <button class="log-day-btn" id="log-day-B" onclick="setLogDay('B')">B</button>
+        <button class="log-day-btn" id="log-day-C" onclick="setLogDay('C')">C</button>
+      </div>
+      <div class="log-row" style="margin-bottom:14px">
+        <button class="log-mode-btn active" id="log-mode-gym" onclick="setLogMode('gym')">🏋 Gym</button>
+        <button class="log-mode-btn" id="log-mode-alt" onclick="setLogMode('alt')">🌲 Calisthenics+KB</button>
+      </div>
+      <div class="feel-row">
+        <button class="feel-btn" id="feel-1" onclick="setFeel('1')">Rough</button>
+        <button class="feel-btn" id="feel-2" onclick="setFeel('2')">Tired</button>
+        <button class="feel-btn active" id="feel-3" onclick="setFeel('3')">Solid</button>
+        <button class="feel-btn" id="feel-4" onclick="setFeel('4')">Strong</button>
+        <button class="feel-btn" id="feel-5" onclick="setFeel('5')">Beast</button>
+      </div>
+      <textarea class="diary-textarea" id="diary-notes" placeholder="Weights used, PRs, what felt heavy, what was easy..."></textarea>
+      <button class="save-btn" id="save-btn" onclick="saveEntry()">SAVE SESSION</button>
+    </div>
+
+    <div id="diary-count" class="diary-count"></div>
+    <div id="diary-list"></div>
+  </div>
+
+  <!-- SCHEDULE PANEL -->
+  <div class="panel" id="panel-schedule">
+    <div class="sched-intro">Alternate A→B→C continuously. Don't think in calendar weeks — just do the next session in the sequence. Use whichever version fits your day. The sequence never resets.</div>
+
+    <div class="rotation-box">
+      <div class="rotation-label">THE ROTATION</div>
+      <div class="rotation-seq">A → B → C → A → B → C → ...</div>
+      <div class="rotation-detail">
+        <span style="color:#D4A843;font-family:monospace">3× week:</span> Mon A / Wed B / Fri C → Mon A...<br>
+        <span style="color:#4A9ECC;font-family:monospace">2× week:</span> Continue the sequence, don't restart from A.<br>
+        <span style="color:#CC4A4A;font-family:monospace">No gym:</span> Same day letter, switch to Calisthenics+KB version.
+      </div>
+    </div>
+
+    <div class="phases-label">3-MONTH PHASES — TAP TO EXPAND</div>
+    <div class="phase-card" onclick="togglePhase(this)">
+      <div class="phase-card-row">
+        <div class="phase-name" style="color:#D4A843">Load the Pattern</div>
+        <div class="phase-right"><div class="phase-weeks">Weeks 1–4</div><div class="phase-arrow">▼</div></div>
+      </div>
+      <div class="phase-desc">Find your working weights. You should finish sets feeling like you had 1–2 reps left. Log everything — weight, reps, how it felt. This data is what keeps you motivated in month two.</div>
+    </div>
+    <div class="phase-card" onclick="togglePhase(this)">
+      <div class="phase-card-row">
+        <div class="phase-name" style="color:#4A9ECC">Progressive Overload</div>
+        <div class="phase-right"><div class="phase-weeks">Weeks 5–8</div><div class="phase-arrow">▼</div></div>
+      </div>
+      <div class="phase-desc">Add weight whenever you hit the top of the rep range. This is the only mechanism that forces muscle growth. If the weight isn't going up, check sleep, protein, and effort.</div>
+    </div>
+    <div class="phase-card" onclick="togglePhase(this)">
+      <div class="phase-card-row">
+        <div class="phase-name" style="color:#CC4A4A">Push the Ceiling</div>
+        <div class="phase-right"><div class="phase-weeks">Weeks 9–12</div><div class="phase-arrow">▼</div></div>
+      </div>
+      <div class="phase-desc">Drop rest to 75s on isolation work. Add slow eccentrics (3–4s down) on key lifts. By now your diary should show clear weight increases vs Week 1 — that's the evidence.</div>
+    </div>
+
+    <div class="protein-box">
+      <div class="protein-label">PROTEIN — THE ONE NUMBER TO TRACK</div>
+      <div class="protein-number">140g</div>
+      <div class="protein-sub">per day · non-negotiable for recomposition at 78kg</div>
+      <div style="margin-top:16px">
+        <div class="protein-row"><div class="protein-food">3–4 eggs + Greek yogurt</div><div class="protein-g">~40g</div></div>
+        <div class="protein-row"><div class="protein-food">200g chicken/fish at lunch</div><div class="protein-g">~45g</div></div>
+        <div class="protein-row"><div class="protein-food">Cottage cheese or shake</div><div class="protein-g">~25g</div></div>
+        <div class="protein-row"><div class="protein-food">200g meat/fish at dinner</div><div class="protein-g">~40g</div></div>
+        <div class="protein-total">TOTAL: ~150g · Done.</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+const THEMES = { A: '#D4A843', B: '#4A9ECC', C: '#CC4A4A' };
+const FEEL_COLORS = { '1':'#555','2':'#777','3':'#D4A843','4':'#4A9ECC','5':'#CC4A4A' };
+const FEEL_LABELS = { '1':'Rough','2':'Tired','3':'Solid','4':'Strong','5':'Beast' };
+
+const WORKOUTS = {
+  A: {
+    label: 'DAY A', focus: 'Push + Biceps',
+    note: 'Log your weights every session. If you hit the top of the rep range, add weight next session. That\'s the whole game.',
+    gym: [
+      { id:'a1', name:'Barbell Bench Press', sets:'4', reps:'5–6', muscles:'Chest, Triceps, Front Delt', note:'Heaviest compound of the day. Warm up with 2 ramp sets. Arch, leg drive, controlled descent. Hit 6 clean reps → add 2.5kg next session.' },
+      { id:'a2', name:'Incline Dumbbell Press', sets:'3', reps:'8–10', muscles:'Upper Chest, Front Delt', note:'30–45° incline. Most underdeveloped chest area. Don\'t go so heavy you lose the chest feel — it\'s not a shoulder press.' },
+      { id:'a3', name:'Cable Fly or Pec Deck', sets:'3', reps:'12–15', muscles:'Chest (stretch emphasis)', note:'Full stretch at the bottom is the whole point. Light enough to feel the pec. Slow eccentric.' },
+      { id:'a4', name:'Overhead Press (Barbell)', sets:'3', reps:'6–8', muscles:'Shoulders, Triceps', note:'Strict — no leg drive. Builds shoulder roundness that makes you look athletic from the front. Progress like bench.' },
+      { id:'a5', name:'Lateral Raise (Cable or DB)', sets:'4', reps:'12–15', muscles:'Lateral Delt', note:'Lead with elbow, slight forward lean, don\'t shrug. Go lighter than you think. Cable gives better constant tension.' },
+      { id:'a6', name:'Barbell or EZ-Bar Curl', sets:'3', reps:'8–10', muscles:'Biceps', note:'No swinging. Full extension at bottom — the stretch matters. Supinate at the top for full contraction.' },
+      { id:'a7', name:'Incline Dumbbell Curl', sets:'3', reps:'10–12', muscles:'Biceps (long head)', note:'Arms hang behind body. Isolates the long head — builds the peak you see from the side.' },
+    ],
+    alt: [
+      { id:'aa1', name:'Archer Push-Up', sets:'4', reps:'6–8 each side', muscles:'Chest, Triceps (unilateral)', note:'Wide stance, shift your weight to one side while the other arm stays nearly straight. Slow and controlled. This is your bench press substitute — take it seriously.' },
+      { id:'aa2', name:'Pike Push-Up (feet elevated)', sets:'3', reps:'10–12', muscles:'Shoulders, Triceps', note:'Hips high, head tracks between hands on the way down. Feet on a bench or chair for difficulty. Your OHP substitute.' },
+      { id:'aa3', name:'Dip (bar or chair)', sets:'4', reps:'8–12', muscles:'Lower Chest, Triceps', note:'Lean forward slightly for chest emphasis. Full lockout at top. Add a kettlebell between your feet if too easy.' },
+      { id:'aa4', name:'KB Single-Arm Press', sets:'3', reps:'8–10 each', muscles:'Shoulders, Triceps, Core', note:'Strict overhead press with one arm. Forces core stability. Slow and controlled — this isn\'t about moving weight fast.' },
+      { id:'aa5', name:'KB Lateral Raise', sets:'3', reps:'12–15', muscles:'Lateral Delt', note:'Lead with elbow, don\'t shrug. Light enough to feel the delt, not the trap.' },
+      { id:'aa6', name:'Chin-Up (supinated grip)', sets:'4', reps:'6–10', muscles:'Biceps, Lats', note:'Underhand grip hits biceps harder than pull-ups. Slow eccentric — 3–4 seconds down. Best bicep builder without a barbell.' },
+      { id:'aa7', name:'KB Curl', sets:'3', reps:'10–12', muscles:'Biceps', note:'Full extension at the bottom. Supinate at the top. If only one KB, do single-arm alternating.' },
+    ],
+  },
+  B: {
+    label: 'DAY B', focus: 'Pull + Rear Delt',
+    note: 'Back is the foundation of that athletic look. Most people underdevelop it because they can\'t see it. Trust the numbers.',
+    gym: [
+      { id:'b1', name:'Weighted Pull-Up', sets:'4', reps:'5–8', muscles:'Lats, Biceps, Teres Major', note:'Add a plate from day one if bodyweight is easy. Dead hang start, chin over bar. Primary width builder — treat it like a main lift.' },
+      { id:'b2', name:'Barbell Bent-Over Row', sets:'4', reps:'6–8', muscles:'Mid Back, Rhomboids, Rear Delt', note:'Overhand grip, hinge ~45°. Heavy. Builds the back thickness that shows as width from the front. Drive elbows back, not up.' },
+      { id:'b3', name:'Seated Cable Row (rope)', sets:'3', reps:'10–12', muscles:'Rhomboids, Mid Trap, Rear Delt', note:'Rope pulls elbows out — hits rear delt and upper back differently. Full stretch forward, hard squeeze back.' },
+      { id:'b4', name:'Cable Face Pull', sets:'3', reps:'15', muscles:'Rear Delt, Rotator Cuff, Mid Trap', note:'High pulley, rope. Pull to eye level, externally rotate at the end. Non-negotiable for shoulder health.' },
+      { id:'b5', name:'Straight-Arm Cable Pulldown', sets:'3', reps:'12–15', muscles:'Lats (isolation)', note:'Arms straight, lat squeeze at the bottom. Slow eccentric. Best isolation for lat mind-muscle connection.' },
+      { id:'b6', name:'Hammer Curl', sets:'3', reps:'10–12', muscles:'Brachialis, Biceps', note:'Neutral grip. Brachialis pushes the bicep up from below — builds arm thickness that curls alone don\'t give you.' },
+    ],
+    alt: [
+      { id:'ba1', name:'Weighted Pull-Up', sets:'5', reps:'5–8', muscles:'Lats, Biceps, Teres Major', note:'Add a kettlebell between your feet. One extra set since you\'re losing cable volume. This is the anchor of the session.' },
+      { id:'ba2', name:'Inverted Row (under a bar)', sets:'4', reps:'10–15', muscles:'Mid Back, Rhomboids, Rear Delt', note:'Body horizontal under a low bar, pull chest to bar. The lower your body angle, the harder. Genuinely replaces bent-over rows.' },
+      { id:'ba3', name:'KB Single-Arm Row', sets:'3', reps:'10–12 each', muscles:'Lats, Rhomboids, Rear Delt', note:'One knee on a surface, drive elbow back. Full stretch at the bottom. Go heavy — this should be your heaviest KB movement.' },
+      { id:'ba4', name:'KB Pull-Apart (by the horns)', sets:'3', reps:'15–20', muscles:'Rear Delt, Mid Trap', note:'Hold KB by the horns at shoulder height, pull apart. External rotation at the end. Face pull substitute — shoulder health insurance.' },
+      { id:'ba5', name:'Typewriter Pull-Up', sets:'3', reps:'4–6 each side', muscles:'Lats (unilateral)', note:'At the top of a pull-up, slide side to side. Hits each lat independently. Too hard? Do pull-ups with 2s pause at top instead.' },
+      { id:'ba6', name:'KB Hammer Curl', sets:'3', reps:'10–12', muscles:'Brachialis, Biceps', note:'Neutral grip. Full extension at the bottom. Slow eccentric.' },
+    ],
+  },
+  C: {
+    label: 'DAY C', focus: 'Legs + Core',
+    note: 'Legs build the base of the physique. At your height and weight, leg development makes everything above look bigger. Don\'t skip this.',
+    gym: [
+      { id:'c1', name:'Barbell Back Squat', sets:'4', reps:'5–6', muscles:'Quads, Glutes, Core', note:'Heaviest compound of the day. Bar on traps, chest up, knees track over toes. Parallel minimum. Hit 6 reps → add weight.' },
+      { id:'c2', name:'Romanian Deadlift', sets:'3', reps:'8–10', muscles:'Hamstrings, Glutes, Spinal Erectors', note:'Hinge, don\'t squat. Bar stays close to legs, soft knee bend, feel the hamstring stretch. Builds the glute/ham tie-in.' },
+      { id:'c3', name:'Leg Press', sets:'3', reps:'10–12', muscles:'Quads, Glutes', note:'After squats, load up and get volume in. Feet shoulder-width, go deep. Don\'t lock out at top.' },
+      { id:'c4', name:'Leg Curl (machine)', sets:'3', reps:'10–12', muscles:'Hamstrings', note:'Full extension, full contraction. Slow eccentric. Don\'t cut the range of motion.' },
+      { id:'c5', name:'Calf Raise (standing)', sets:'4', reps:'12–15', muscles:'Gastrocnemius, Soleus', note:'Full stretch at the bottom — that\'s where calves grow. Most people do half reps and wonder why calves don\'t respond.' },
+      { id:'c6', name:'Hanging Leg Raise', sets:'3', reps:'12–15', muscles:'Lower Abs, Hip Flexors', note:'From pull-up bar. Straight legs = harder. Don\'t swing — control the descent.' },
+      { id:'c7', name:'Cable Crunch or Ab Wheel', sets:'3', reps:'12–15', muscles:'Upper/Mid Abs', note:'Weighted abs respond like any other muscle. Add resistance over time.' },
+    ],
+    alt: [
+      { id:'ca1', name:'KB Goblet Squat', sets:'4', reps:'12–15', muscles:'Quads, Glutes, Core', note:'Hold KB at chest, elbows inside knees at the bottom. Go deep. Volume replaces barbell intensity — don\'t rush the reps.' },
+      { id:'ca2', name:'Bulgarian Split Squat (KB)', sets:'4', reps:'10–12 each', muscles:'Quads, Glutes (unilateral)', note:'Rear foot elevated on a bench. Hold KBs at sides. Hardest single-leg movement available — genuinely replaces leg press. Front knee tracks over toes.' },
+      { id:'ca3', name:'KB Romanian Deadlift', sets:'3', reps:'10–12', muscles:'Hamstrings, Glutes', note:'Same hinge pattern as barbell. Hold KBs in front of thighs. Feel the hamstring stretch. Go single-leg if too easy.' },
+      { id:'ca4', name:'KB Swing', sets:'4', reps:'15–20', muscles:'Glutes, Hamstrings, Core', note:'Hip drive — not a squat. Power from the hinge. Posterior chain work and conditioning combined. Go heavy enough that rep 18 is a grind.' },
+      { id:'ca5', name:'Single-Leg Calf Raise', sets:'4', reps:'15–20 each', muscles:'Calves', note:'Hold a bar for balance, full stretch at the bottom. Single-leg makes bodyweight actually challenging for calves.' },
+      { id:'ca6', name:'Hanging Leg Raise', sets:'3', reps:'12–15', muscles:'Lower Abs, Hip Flexors', note:'Same as gym version — pull-up bar. Straight legs, no swinging. Control the descent.' },
+      { id:'ca7', name:'L-Sit Hold', sets:'3', reps:'Max hold (10–30s)', muscles:'Core, Hip Flexors, Triceps', note:'Start with tuck if L-sit is too hard. Pure compression strength. Rest 45s between holds.' },
+    ],
+  },
+};
+
+// State
+let currentDay = 'A';
+let currentMode = 'gym';
+let currentTab = 'plan';
+let openExId = null;
+let logDay = 'A';
+let logMode = 'gym';
+let logFeel = '3';
+let diary = [];
+
+// Load diary from localStorage
+try { diary = JSON.parse(localStorage.getItem('gp_diary') || '[]'); } catch(e) { diary = []; }
+
+function saveDiary() {
+  try { localStorage.setItem('gp_diary', JSON.stringify(diary)); } catch(e) {}
+}
+
+// Tab switching
+function switchTab(tab) {
+  currentTab = tab;
+  document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+  document.getElementById('panel-' + tab).classList.add('active');
+  document.querySelectorAll('.tab-btn').forEach((b, i) => {
+    b.classList.remove('active');
+    if (['plan','diary','schedule'][i] === tab) b.classList.add('active');
+  });
+  updateTheme();
+  if (tab === 'diary') renderDiary();
+}
+
+function updateTheme() {
+  const theme = THEMES[currentDay];
+  document.documentElement.style.setProperty('--theme', theme);
+  document.querySelectorAll('.tab-btn.active').forEach(b => {
+    b.style.color = theme;
+    b.style.borderBottomColor = theme;
+  });
+}
+
+// Day switching
+function switchDay(day) {
+  currentDay = day;
+  openExId = null;
+  document.querySelectorAll('.day-btn').forEach(b => {
+    b.classList.remove('active');
+    b.style.background = '#111';
+    b.style.borderColor = '#1E1E1E';
+    b.style.color = '#555';
+  });
+  const btn = document.getElementById('day-' + day);
+  btn.classList.add('active');
+  btn.style.background = THEMES[day];
+  btn.style.borderColor = THEMES[day];
+  btn.style.color = '#0A0A0A';
+  updateTheme();
+  renderExercises();
+}
+
+// Mode switching
+function switchMode(mode) {
+  currentMode = mode;
+  openExId = null;
+  document.getElementById('mode-gym').classList.toggle('active', mode === 'gym');
+  document.getElementById('mode-alt').classList.toggle('active', mode === 'alt');
+  renderExercises();
+}
+
+function renderExercises() {
+  const w = WORKOUTS[currentDay];
+  const theme = THEMES[currentDay];
+  const exercises = w[currentMode];
+  const modeLabel = currentMode === 'gym' ? 'GYM VERSION' : 'CALISTHENICS + KB VERSION';
+
+  document.getElementById('section-label').textContent = `${w.label} — ${w.focus} · ${modeLabel}`;
+  document.getElementById('section-label').style.color = theme;
+  document.getElementById('section-note').textContent = w.note;
+
+  const list = document.getElementById('exercise-list');
+  list.innerHTML = exercises.map(ex => `
+    <div class="ex-card ${openExId === ex.id ? 'open' : ''}" onclick="toggleEx('${ex.id}')">
+      <div class="ex-card-row">
+        <div>
+          <div class="ex-name">${ex.name}</div>
+          <div class="ex-muscles">${ex.muscles}</div>
+        </div>
+        <div class="ex-sets" style="color:${theme}">${ex.sets} × ${ex.reps}</div>
+      </div>
+      <div class="ex-note">${ex.note}</div>
+    </div>
+  `).join('');
+}
+
+function toggleEx(id) {
+  openExId = openExId === id ? null : id;
+  renderExercises();
+}
+
+// Phase toggle
+function togglePhase(card) {
+  card.classList.toggle('open');
+  const arrow = card.querySelector('.phase-arrow');
+  arrow.textContent = card.classList.contains('open') ? '▲' : '▼';
+}
+
+// Diary log state
+function setLogDay(day) {
+  logDay = day;
+  document.querySelectorAll('.log-day-btn').forEach(b => {
+    b.classList.remove('active');
+    b.style.background = '#161616';
+    b.style.borderColor = '#1E1E1E';
+    b.style.color = '#444';
+  });
+  const btn = document.getElementById('log-day-' + day);
+  btn.classList.add('active');
+  btn.style.background = THEMES[day];
+  btn.style.borderColor = THEMES[day];
+  btn.style.color = '#0A0A0A';
+}
+
+function setLogMode(mode) {
+  logMode = mode;
+  document.getElementById('log-mode-gym').classList.toggle('active', mode === 'gym');
+  document.getElementById('log-mode-alt').classList.toggle('active', mode === 'alt');
+}
+
+function setFeel(feel) {
+  logFeel = feel;
+  document.querySelectorAll('.feel-btn').forEach(b => {
+    b.classList.remove('active');
+    b.style.background = '#161616';
+    b.style.borderColor = '#1E1E1E';
+    b.style.color = '#333';
+  });
+  const btn = document.getElementById('feel-' + feel);
+  btn.classList.add('active');
+  btn.style.background = FEEL_COLORS[feel];
+  btn.style.borderColor = FEEL_COLORS[feel];
+  btn.style.color = '#0A0A0A';
+}
+
+function saveEntry() {
+  const notes = document.getElementById('diary-notes').value.trim();
+  const entry = {
+    id: Date.now(),
+    date: new Date().toLocaleDateString('en-GB', { day: 'numeric', month: 'short' }),
+    day: logDay,
+    mode: logMode,
+    feel: logFeel,
+    notes: notes,
+  };
+  diary.unshift(entry);
+  saveDiary();
+  document.getElementById('diary-notes').value = '';
+  const btn = document.getElementById('save-btn');
+  btn.textContent = '✓ LOGGED';
+  btn.classList.add('saved');
+  setTimeout(() => { btn.textContent = 'SAVE SESSION'; btn.classList.remove('saved'); }, 1500);
+  renderDiary();
+}
+
+function deleteEntry(id) {
+  diary = diary.filter(e => e.id !== id);
+  saveDiary();
+  renderDiary();
+  updateDiaryTabCount();
+}
+
+function updateDiaryTabCount() {
+  const btn = document.querySelector('.tabs .tab-btn:nth-child(2)');
+  btn.textContent = diary.length ? `DIARY (${diary.length})` : 'DIARY';
+}
+
+function renderDiary() {
+  updateDiaryTabCount();
+  const countEl = document.getElementById('diary-count');
+  const listEl = document.getElementById('diary-list');
+
+  if (diary.length === 0) {
+    countEl.textContent = '';
+    listEl.innerHTML = '<div class="diary-empty">No sessions yet. First entry starts the streak.</div>';
+    return;
+  }
+
+  countEl.textContent = `${diary.length} SESSION${diary.length !== 1 ? 'S' : ''} LOGGED`;
+  listEl.innerHTML = diary.map(e => `
+    <div class="entry-card">
+      <div class="entry-row" style="margin-bottom:${e.notes ? '9px' : '0'}">
+        <div class="entry-tags">
+          <span class="entry-day-tag" style="background:${THEMES[e.day] || '#444'}">${e.day}</span>
+          <span class="entry-mode-tag">${e.mode === 'alt' ? 'KB+CAL' : 'GYM'}</span>
+          <span class="entry-date">${e.date}</span>
+          <span class="entry-feel" style="color:${FEEL_COLORS[e.feel]}">${FEEL_LABELS[e.feel]}</span>
+        </div>
+        <button class="entry-delete" onclick="deleteEntry(${e.id})">×</button>
+      </div>
+      ${e.notes ? `<div class="entry-notes">${e.notes}</div>` : ''}
+    </div>
+  `).join('');
+}
+
+// Init
+renderExercises();
+renderDiary();
+updateTheme();
+setLogDay('A');
+setFeel('3');
+</script>
+</body>
+</html>
