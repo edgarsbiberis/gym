@@ -1,0 +1,338 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Training">
+  <meta name="theme-color" content="#0A0A0A">
+  <title>Training Plans</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+    body { background: #0A0A0A; color: #DDD8CC; font-family: Georgia, serif; min-height: 100vh; padding-bottom: calc(env(safe-area-inset-bottom, 20px) + 60px); }
+    .app { max-width: 680px; margin: 0 auto; }
+    .header { padding: calc(env(safe-area-inset-top, 20px) + 24px) 22px 16px; border-bottom: 1px solid #1A1A1A; }
+    .header-label { font-size: 9px; letter-spacing: 0.3em; color: #3A3A3A; font-family: monospace; margin-bottom: 8px; text-transform: uppercase; }
+    .header h1 { font-size: 28px; font-weight: 400; letter-spacing: -0.02em; line-height: 1; }
+    .header-sub { font-size: 11px; color: #444; margin-top: 5px; font-family: monospace; }
+    .plan-selector { display: flex; border-bottom: 1px solid #1A1A1A; position: sticky; top: 0; background: #0A0A0A; z-index: 100; }
+    .plan-btn { flex: 1; padding: 12px 6px; background: none; border: none; border-bottom: 2px solid transparent; color: #333; font-size: 8px; letter-spacing: 0.15em; font-family: monospace; cursor: pointer; transition: all 0.2s; line-height: 1.4; text-align: center; }
+    .plan-btn.active { border-bottom-color: var(--theme, #D4A843); color: var(--theme, #D4A843); }
+    .day-tabs { display: flex; gap: 6px; padding: 16px 20px 0; }
+    .day-tab { flex: 1; padding: 12px 6px; background: #111; border: 1px solid #1E1E1E; border-radius: 6px; color: #555; font-family: monospace; font-size: 12px; font-weight: 700; cursor: pointer; transition: all 0.2s; text-align: center; }
+    .day-tab .day-sub { font-size: 8px; margin-top: 3px; opacity: 0.7; font-weight: 400; display: block; letter-spacing: 0.05em; }
+    .day-tab.active { color: #0A0A0A; }
+    .content { padding: 18px 20px; }
+    .day-label { font-size: 9px; letter-spacing: 0.2em; font-family: monospace; margin-bottom: 4px; }
+    .day-note { font-size: 12px; color: #555; font-style: italic; margin-bottom: 16px; line-height: 1.6; }
+    .ex-card { background: #0F0F0F; border: 1px solid #161616; border-radius: 6px; padding: 13px 15px; margin-bottom: 5px; cursor: pointer; }
+    .ex-card.open { background: #141414; border-color: #252525; }
+    .ex-card.hard { border-left: 2px solid #CC4A4A; }
+    .ex-row { display: flex; justify-content: space-between; align-items: flex-start; }
+    .ex-name { font-size: 14px; color: #DDD8CC; }
+    .ex-muscles { font-size: 10px; color: #3A3A3A; font-family: monospace; margin-top: 3px; }
+    .ex-right { text-align: right; flex-shrink: 0; margin-left: 10px; }
+    .ex-sets { font-size: 12px; font-family: monospace; font-weight: 700; }
+    .ex-rpe { font-size: 10px; color: #444; font-family: monospace; margin-top: 2px; }
+    .ex-note { margin-top: 11px; padding-top: 11px; border-top: 1px solid #1A1A1A; font-size: 12px; color: #888; line-height: 1.7; font-style: italic; display: none; }
+    .ex-card.open .ex-note { display: block; }
+    .ceiling-note { background: #110808; border: 1px solid #2A1A1A; border-radius: 6px; padding: 12px 14px; margin-bottom: 14px; font-size: 11px; color: #885555; line-height: 1.6; font-style: italic; }
+    .finisher { background: #111; border: 1px solid #1A1A1A; border-left: 3px solid var(--theme, #D4A843); border-radius: 6px; padding: 14px 16px; margin-top: 12px; }
+    .finisher-label { font-size: 9px; letter-spacing: 0.2em; font-family: monospace; margin-bottom: 8px; }
+    .finisher-name { font-size: 14px; color: #DDD8CC; margin-bottom: 6px; }
+    .finisher-desc { font-size: 12px; color: #777; line-height: 1.6; }
+    .tap-hint { margin-top: 14px; font-size: 10px; color: #1E1E1E; text-align: center; font-family: monospace; letter-spacing: 0.1em; }
+    .progress-note { background: #0F0F0F; border: 1px solid #1A1A1A; border-radius: 8px; padding: 14px 16px; margin-bottom: 16px; }
+    .progress-note p { font-size: 12px; color: #666; line-height: 1.7; font-style: italic; }
+    .progress-note strong { color: #AAA; font-style: normal; }
+  </style>
+</head>
+<body>
+<div class="app">
+  <div class="header">
+    <div class="header-label">Edgars · 188cm / 80kg · Recomposition</div>
+    <h1>4-Day Training</h1>
+    <div class="header-sub">Push / Pull / Legs / Full Body · Max difficulty per segment</div>
+  </div>
+  <div class="plan-selector">
+    <button class="plan-btn active" onclick="switchPlan('gym')">🏋<br>GYM</button>
+    <button class="plan-btn" onclick="switchPlan('kb')">🪨<br>KB + BW</button>
+    <button class="plan-btn" onclick="switchPlan('cal')">🌲<br>CALISTHENICS</button>
+  </div>
+  <div class="day-tabs" id="day-tabs"></div>
+  <div class="content" id="content"></div>
+</div>
+
+<script>
+const PLANS = {
+  gym: {
+    theme: '#D4A843',
+    progressNote: 'Hit the top of the rep range → add 2.5kg next session. No exceptions.',
+    days: [
+      {
+        label: 'DAY 1', sub: 'PUSH', color: '#D4A843',
+        note: 'Chest, shoulders, triceps. Strongest push day across all three plans. Barbell compounds first, highest load.',
+        exercises: [
+          { name: 'Barbell Bench Press', sets: '4', reps: '4–6', muscles: 'Chest, Triceps, Front Delt', rpe: 'RPE 8–9', hard: true, note: 'Primary strength movement. 2 ramp sets before working sets. Arch, leg drive, 2s controlled descent. Chase PRs every session. This is the lift that separates the gym plan from the others.' },
+          { name: 'Incline DB Press', sets: '4', reps: '6–8', muscles: 'Upper Chest, Front Delt', rpe: 'RPE 8', hard: false, note: '30–45°. Increased sets vs previous version — upper chest is what you\'re after. Don\'t lose the chest feel going heavy.' },
+          { name: 'Weighted Dip', sets: '3', reps: '6–8', muscles: 'Lower Chest, Triceps', rpe: 'RPE 8', hard: true, note: 'Add a plate. Lean forward for chest. Third pressing movement — this is what makes gym Day 1 the strongest push day. KB and calisthenics can\'t match three loaded pressing movements.' },
+          { name: 'Barbell Overhead Press', sets: '3', reps: '6–8', muscles: 'Anterior & Lateral Delt, Triceps', rpe: 'RPE 8', hard: false, note: 'Strict. No leg drive. Progress like bench — hit 8, add weight next session.' },
+          { name: 'Cable Lateral Raise', sets: '4', reps: '12–15', muscles: 'Lateral Delt', rpe: 'RPE 7', hard: false, note: 'Constant tension throughout. Lead with elbow. Go lighter than you want — this is isolation.' },
+          { name: 'Tricep Pushdown (rope)', sets: '3', reps: '10–12', muscles: 'Triceps', rpe: 'RPE 7–8', hard: false, note: 'Elbows pinned. Full extension, hard squeeze. Triceps are 2/3 of arm size. Don\'t skip this.' },
+        ],
+      },
+      {
+        label: 'DAY 2', sub: 'PULL', color: '#4A9ECC',
+        note: 'Back, biceps, rear delts. Gym and calisthenics are neck-and-neck here. Weighted pull-ups anchor both. Extra row volume makes gym edge ahead.',
+        exercises: [
+          { name: 'Weighted Pull-Up', sets: '5', reps: '4–6', muscles: 'Lats, Biceps, Teres Major', rpe: 'RPE 8–9', hard: true, note: 'Increased to 5 sets to match calisthenics intensity. Add weight — if bodyweight is easy for 8 reps you should be adding plates. Dead hang start. This is your primary width builder.' },
+          { name: 'Barbell Bent-Over Row', sets: '4', reps: '5–7', muscles: 'Mid Back, Rhomboids, Rear Delt', rpe: 'RPE 8–9', hard: true, note: 'Heavier than before — lower rep range, higher load. This is the back thickness movement. Overhand grip, hinge ~45°, drive elbows back and up.' },
+          { name: 'Seated Cable Row (rope)', sets: '3', reps: '10–12', muscles: 'Rhomboids, Mid Trap, Rear Delt', rpe: 'RPE 7', hard: false, note: 'Rope pulls elbows wide. Full stretch forward, hard squeeze back. Pause 1s at contraction.' },
+          { name: 'Cable Face Pull', sets: '3', reps: '15', muscles: 'Rear Delt, Rotator Cuff', rpe: 'RPE 6', hard: false, note: 'Shoulder health. High pulley, rope, pull to eye level, externally rotate. Non-negotiable.' },
+          { name: 'EZ-Bar Curl', sets: '4', reps: '6–8', muscles: 'Biceps', rpe: 'RPE 8', hard: false, note: 'Heavier than before — lower reps. Full extension at the bottom. Supinate at the top. No swinging.' },
+          { name: 'Incline DB Curl', sets: '3', reps: '10–12', muscles: 'Biceps (long head)', rpe: 'RPE 7', hard: false, note: 'Arms hang behind body on incline. Isolates the long head — builds the peak. Slow 3s eccentric.' },
+        ],
+      },
+      {
+        label: 'DAY 3', sub: 'LEGS', color: '#CC4A4A',
+        note: 'Strongest leg day across all three plans by a large margin. Barbell squat and RDL cannot be matched with KB or bodyweight. Do not skip this day.',
+        exercises: [
+          { name: 'Barbell Back Squat', sets: '5', reps: '4–6', muscles: 'Quads, Glutes, Core', rpe: 'RPE 8–9', hard: true, note: 'Increased to 5 sets. This is where the gym plan dominates. Bar on traps, chest up, parallel minimum. Hit 6 → add weight. You keep skipping this. Stop.' },
+          { name: 'Romanian Deadlift', sets: '4', reps: '6–8', muscles: 'Hamstrings, Glutes, Spinal Erectors', rpe: 'RPE 8', hard: true, note: 'Heavier, lower reps than before. Hinge — bar stays close, feel the hamstring stretch. Builds the glute-ham tie-in that defines the physique from the side.' },
+          { name: 'Leg Press (heavy)', sets: '3', reps: '8–10', muscles: 'Quads, Glutes', rpe: 'RPE 8', hard: false, note: 'Load it up. Go deeper than you think is comfortable. Don\'t lock out at the top.' },
+          { name: 'Leg Curl (machine)', sets: '3', reps: '10–12', muscles: 'Hamstrings', rpe: 'RPE 7', hard: false, note: 'Full range. Slow eccentric. Hamstrings respond to stretch — don\'t cut it short.' },
+          { name: 'Standing Calf Raise', sets: '4', reps: '12–15', muscles: 'Gastrocnemius, Soleus', rpe: 'RPE 7', hard: false, note: 'Full stretch at bottom. Pause there. Half reps don\'t grow calves.' },
+          { name: 'Hanging Leg Raise', sets: '4', reps: '12–15', muscles: 'Lower Abs, Hip Flexors', rpe: 'RPE 7–8', hard: false, note: 'Increased to 4 sets. Straight legs. No swinging. Control the descent.' },
+        ],
+      },
+      {
+        label: 'DAY 4', sub: 'FULL BODY', color: '#7EC87E',
+        note: 'Rebuilt to match KB Day 4 intensity — more athletic, heavier compounds, no isolation. Conditioning finisher is mandatory.',
+        exercises: [
+          { name: 'Barbell Clean & Press', sets: '4', reps: '4–5', muscles: 'Full Body — Legs, Back, Shoulders', rpe: 'RPE 8–9', hard: true, note: 'Added to match the athletic demand of KB clean & press. Clean the bar from the floor, then press overhead. Full-body power movement. If you don\'t know the clean, do a barbell high pull into push press.' },
+          { name: 'Barbell Front Squat', sets: '3', reps: '5–6', muscles: 'Quads, Glutes, Core', rpe: 'RPE 8–9', hard: true, note: 'More athletic and quad-dominant than back squat. Bar in front rack or crossed-arm. Upright torso. Different stimulus from Day 3.' },
+          { name: 'Weighted Dip', sets: '3', reps: '6–8', muscles: 'Chest, Triceps', rpe: 'RPE 8', hard: false, note: 'Second pressing movement. Lean forward for chest. Add a plate.' },
+          { name: 'Barbell Row (heavy)', sets: '3', reps: '5–6', muscles: 'Full Back, Biceps', rpe: 'RPE 8–9', hard: true, note: 'Heavier than Day 2 rows. Explosive pull, controlled descent. Strength focus.' },
+          { name: 'KB Romanian Deadlift', sets: '3', reps: '8', muscles: 'Hamstrings, Glutes', rpe: 'RPE 7', hard: false, note: 'Keeps posterior chain frequency high without destroying recovery ahead of Day 1.' },
+        ],
+        finisher: {
+          name: '12-Min Athletic Conditioning Finisher',
+          desc: '4 rounds: 5 barbell clean & press (light) → 10 box jumps → 10 push-ups → 10 KB swings → 30s rest. Move fast. No isolation. This is where fat loss happens on the training side.'
+        }
+      },
+    ],
+  },
+
+  kb: {
+    theme: '#C87EC8',
+    progressNote: 'Progress by moving to a heavier KB or harder variation. Equipment: one kettlebell and floor only. No bar, no pull-up bar.',
+    days: [
+      {
+        label: 'DAY 1', sub: 'PUSH', color: '#C87EC8',
+        note: 'Hardest KB push day possible without a bar. KB crush press adds chest tension that floor press alone misses. Three distinct pressing stimuli.',
+        exercises: [
+          { name: 'KB Single-Arm Floor Press', sets: '5', reps: '6–8 each', muscles: 'Chest, Triceps, Front Delt', rpe: 'RPE 8–9', hard: true, note: 'Increased to 5 sets — this is your bench press substitute and needs the volume. Lie on back, press one KB straight up. Drive the opposite shoulder blade into the floor. Go as heavy as you can control. 3s eccentric.' },
+          { name: 'KB Crush Press', sets: '4', reps: '8–10', muscles: 'Chest (adduction), Triceps', rpe: 'RPE 8', hard: true, note: 'Hold one KB by the horns with both hands, press it overhead or at chest level while squeezing the horns together as hard as possible. The lateral force creates constant pec tension that floor press misses. Best chest isolation available without cables.' },
+          { name: 'Archer Push-Up (paused)', sets: '4', reps: '6–8 each', muscles: 'Chest, Triceps (unilateral)', rpe: 'RPE 8–9', hard: true, note: 'Add a 2s pause at the bottom of each rep. This dramatically increases the difficulty and time under tension. Wide stance, shift weight to one side, pause in the stretched position. This is as close to a loaded bench press as bodyweight gets.' },
+          { name: 'KB Single-Arm Press (standing)', sets: '3', reps: '8–10 each', muscles: 'Shoulders, Triceps, Core', rpe: 'RPE 8', hard: false, note: 'Clean to rack, then strict overhead press. No leg drive. Core braces hard. Progress by going heavier.' },
+          { name: 'KB Lateral Raise', sets: '4', reps: '12–15', muscles: 'Lateral Delt', rpe: 'RPE 7', hard: false, note: 'Lead with elbow, slight forward lean. Don\'t shrug. Slow both ways.' },
+          { name: 'Diamond Push-Up (slow eccentric)', sets: '3', reps: '10–15', muscles: 'Triceps, Inner Chest', rpe: 'RPE 7–8', hard: false, note: '4s eccentric, pause at the bottom, explosive up. Elbows track back not flared.' },
+        ],
+      },
+      {
+        label: 'DAY 2', sub: 'PULL', color: '#7EA8C8',
+        note: 'Honest ceiling: KB pull day cannot match gym or calisthenics without a bar. The gap on this day is a hard equipment constraint — not a programming problem. Make every set as heavy and deliberate as possible to close the gap.',
+        ceiling: 'No pull-up bar available. This day will always be harder to max out than gym or calisthenics pull days. Accept it — make up the difference when you train gym or calisthenics.',
+        exercises: [
+          { name: 'KB Deadlift (heavy)', sets: '5', reps: '5–6', muscles: 'Full Back, Glutes, Hamstrings', rpe: 'RPE 8–9', hard: true, note: 'This is your heavy pulling anchor. KB between feet, hinge and pull explosively, controlled descent. Go as heavy as your KB allows. 5 sets because this is your primary back stimulus today — treat it like a barbell deadlift in terms of intent.' },
+          { name: 'KB Single-Arm Row', sets: '5', reps: '8–10 each', muscles: 'Lats, Rhomboids, Rear Delt', rpe: 'RPE 8–9', hard: true, note: '5 sets — extra volume to partially compensate for no vertical pull. Quadruped or brace against a wall. Drive elbow back and up. Full stretch at the bottom, 2s pause at the top. Go heavy. This is the closest movement to a barbell row available.' },
+          { name: 'KB Renegade Row', sets: '4', reps: '8–10 each', muscles: 'Lats, Rhomboids, Core (anti-rotation)', rpe: 'RPE 8–9', hard: true, note: 'Plank position, one hand on KB on the floor, row while the other side holds. Core stays rigid — zero hip rotation. Extremely demanding. Builds back thickness and core strength simultaneously.' },
+          { name: 'KB Prone Row', sets: '3', reps: '12–15 each', muscles: 'Rear Delt, Mid Trap, Rhomboids', rpe: 'RPE 7', hard: false, note: 'Lie face down, row KB toward your hip. Squeeze shoulder blade hard at top. Awkward — learn it. Best rear delt movement available without a cable or bar.' },
+          { name: 'KB Curl', sets: '3', reps: '8–10', muscles: 'Biceps', rpe: 'RPE 8', hard: false, note: 'Heavy. Full extension at bottom. Supinate at top. No swinging.' },
+          { name: 'KB Hammer Curl', sets: '3', reps: '10–12', muscles: 'Brachialis, Biceps', rpe: 'RPE 7', hard: false, note: 'Neutral grip. Brachialis pushes the bicep up. Full extension at the bottom.' },
+        ],
+      },
+      {
+        label: 'DAY 3', sub: 'LEGS', color: '#C87E7E',
+        note: 'Pushed as hard as possible without a barbell. KB front rack squat replaces goblet — heavier and more demanding. Jump squats for power. Nordic curl for hamstrings.',
+        exercises: [
+          { name: 'KB Front Rack Squat', sets: '5', reps: '8–10', muscles: 'Quads, Glutes, Core', rpe: 'RPE 8–9', hard: true, note: 'KB in rack position (resting on forearm, elbow up). More upright torso than goblet squat, heavier load possible, harder core demand. This is the hardest KB squat variation. 5 sets to close the gap with barbell squats. 3s eccentric, pause 1s at the bottom.' },
+          { name: 'KB Split Squat (floor)', sets: '4', reps: '10–12 each', muscles: 'Quads, Glutes (unilateral)', rpe: 'RPE 8', hard: true, note: 'Rear foot on the floor. Long stride. KB in goblet or rack position. 3s eccentric. Heavy as possible. Unilateral loading — each leg works independently.' },
+          { name: 'KB Romanian Deadlift', sets: '4', reps: '8–10', muscles: 'Hamstrings, Glutes', rpe: 'RPE 8', hard: false, note: 'Hinge. KB in front of thighs. Full hamstring stretch at bottom. Go single-leg when this becomes easy with your heaviest KB.' },
+          { name: 'KB Jump Squat', sets: '4', reps: '10', muscles: 'Quads, Glutes, Calves (power)', rpe: 'RPE 8', hard: true, note: 'Hold KB at chest (goblet position), squat and jump explosively. Land softly and absorb. The load makes this dramatically harder than bodyweight jump squat. Builds fast-twitch power that bodyweight can\'t match at the same intensity.' },
+          { name: 'KB Swing', sets: '4', reps: '15–20', muscles: 'Glutes, Hamstrings, Core', rpe: 'RPE 7–8', hard: false, note: 'Hip drive — not a squat. Heavy enough that rep 18 is a fight. Best posterior chain finisher available.' },
+          { name: 'KB Windmill', sets: '3', reps: '6–8 each', muscles: 'Core, Obliques, Hip Mobility', rpe: 'RPE 7', hard: false, note: 'KB overhead, hinge sideways and touch the floor with the other hand. Core stability and hip mobility. Core finisher — no bar needed.' },
+        ],
+      },
+      {
+        label: 'DAY 4', sub: 'FULL BODY', color: '#7EC87E',
+        note: 'Strongest Day 4 across all three plans. KB clean & press is the most athletic full-body movement available. This day wins.',
+        exercises: [
+          { name: 'KB Clean & Press', sets: '5', reps: '5–6 each', muscles: 'Full Body — Legs, Back, Shoulders, Core', rpe: 'RPE 8–9', hard: true, note: 'Increased to 5 sets. Clean from the floor to rack, then press overhead. Hip snap, tight rack, drive overhead. The best full-body KB movement. Builds power, strength, and coordination simultaneously. This is why KB Day 4 beats the others.' },
+          { name: 'KB Front Rack Squat (heavy)', sets: '4', reps: '6–8', muscles: 'Quads, Glutes', rpe: 'RPE 8–9', hard: true, note: 'Heavier than Day 3. Fewer reps, more load. Strength focus. Pause 2s at the bottom.' },
+          { name: 'KB Single-Arm Row (heavy)', sets: '4', reps: '6–8 each', muscles: 'Lats, Rhomboids, Biceps', rpe: 'RPE 8–9', hard: true, note: 'Heaviest you\'ve gone all week. Explosive pull, 3s descent. Strength day for the back.' },
+          { name: 'KB Floor Press (heavy)', sets: '3', reps: '6–8 each', muscles: 'Chest, Triceps', rpe: 'RPE 8', hard: false, note: 'Second pressing movement. Heaviest KB you have. Different from Day 1 archer push-ups.' },
+          { name: 'KB Deadlift (heavy)', sets: '3', reps: '5–6', muscles: 'Full Posterior Chain', rpe: 'RPE 8–9', hard: true, note: 'Heaviest of the week. Explosive pull from the floor. Keeps posterior chain frequency high.' },
+        ],
+        finisher: {
+          name: '12-Min KB Complex Finisher',
+          desc: '4 rounds: 10 KB swings → 6 KB clean & press each arm → 10 push-ups → 10 KB front rack squat → 30s rest. Floor only. By round 4 it should be a fight to finish every rep.'
+        }
+      },
+    ],
+  },
+
+  cal: {
+    theme: '#7EC8A8',
+    progressNote: 'Progress by mastering harder variations. When a movement becomes easy, move to the next variation — never just add reps indefinitely.',
+    days: [
+      {
+        label: 'DAY 1', sub: 'PUSH', color: '#7EC8A8',
+        note: 'Hardest calisthenics push day possible. Pseudo planche push-up opens the session — highest neurological demand first. Three unilateral pressing movements.',
+        exercises: [
+          { name: 'Pseudo Planche Push-Up', sets: '4', reps: '6–8', muscles: 'Front Delt, Chest, Core', rpe: 'RPE 9', hard: true, note: 'Moved to first position — highest neurological demand should come when you\'re fresh. Hands pointing backward at hip level, lean forward so shoulders are past wrists. Extremely hard. Builds toward planche. Most people can\'t do this movement well at all — if you can do 8 clean reps you\'re advanced.' },
+          { name: 'Archer Push-Up (paused)', sets: '4', reps: '6–8 each', muscles: 'Chest, Triceps (unilateral)', rpe: 'RPE 8–9', hard: true, note: '2s pause at the bottom of every rep. Changes the difficulty completely. Wide stance, shift weight to one side, pause in the stretched position, then drive. This is your bench press — treat it as a strength movement.' },
+          { name: 'Weighted Dip', sets: '4', reps: '6–8', muscles: 'Lower Chest, Triceps', rpe: 'RPE 8', hard: true, note: 'Add a dip belt, weighted vest, or hold a KB between your feet. Third loaded pressing movement — this is what makes calisthenics Day 1 competitive with gym. No weight? Add a 3s eccentric to every rep.' },
+          { name: 'Pike Push-Up (feet elevated, slow)', sets: '3', reps: '8–10', muscles: 'Shoulders (all heads)', rpe: 'RPE 8', hard: false, note: 'Feet elevated as high as possible. 4s eccentric. Progress toward wall handstand push-up. Head tracks between hands on the way down.' },
+          { name: 'Diamond Push-Up (weighted)', sets: '3', reps: '8–12', muscles: 'Triceps, Inner Chest', rpe: '7–8', hard: false, note: 'Weighted vest or plate on back if available. 3s eccentric. Elbows track back not flared.' },
+          { name: 'Wide Push-Up (4s eccentric)', sets: '3', reps: '10–12', muscles: 'Chest (outer), Front Delt', rpe: 'RPE 7', hard: false, note: '4s down, 1s pause at bottom, explosive up. Time under tension is the load here. Wide hands increase chest stretch.' },
+        ],
+      },
+      {
+        label: 'DAY 2', sub: 'PULL', color: '#7EA8C8',
+        note: 'Strongest pull day across all three plans. Pull-up variations provide vertical pulling stimulus that KB cannot replicate. L-sit pull-up and typewriter are elite movements.',
+        exercises: [
+          { name: 'Weighted Pull-Up', sets: '5', reps: '4–6', muscles: 'Lats, Biceps, Teres Major', rpe: 'RPE 8–9', hard: true, note: '5 sets, lower rep range — strength focus. Add weight from day one if bodyweight gives you 8+ reps easily. Dead hang start. Chase PRs every session. This is the most important movement in the calisthenics plan.' },
+          { name: 'L-Sit Pull-Up', sets: '4', reps: '4–6', muscles: 'Lats, Core, Hip Flexors', rpe: 'RPE 9', hard: true, note: 'Pull-up with legs straight out in front. Combines lat and core strength. Extremely hard — one of the most demanding pull variations that exists. Do tuck pull-ups if L-sit is not yet possible. Progress toward it.' },
+          { name: 'Typewriter Pull-Up', sets: '3', reps: '4–5 each', muscles: 'Lats (unilateral)', rpe: 'RPE 8–9', hard: true, note: 'At the top of a pull-up, slide side to side. Builds unilateral lat strength. Progression toward one-arm pull-up. One of the hardest pull-up variations — do regular pull-ups with 2s pause if this isn\'t possible yet.' },
+          { name: 'Commando Pull-Up', sets: '3', reps: '5–6 each', muscles: 'Biceps, Lats (rotational)', rpe: 'RPE 8', hard: false, note: 'Hands same direction on the bar, alternate which side head goes to. Hits lats from a rotational angle. Different stimulus from standard pull-up.' },
+          { name: 'Chin-Up (5s eccentric)', sets: '3', reps: '6–8', muscles: 'Biceps, Lats', rpe: 'RPE 8', hard: false, note: '5s eccentric on every rep. Weighted if 8 reps is easy. The eccentric is where bicep growth happens. Don\'t rush.' },
+          { name: 'Inverted Row (feet elevated)', sets: '3', reps: '10–12', muscles: 'Mid Back, Rhomboids, Biceps', rpe: 'RPE 7–8', hard: false, note: 'Feet elevated to make it harder. Underhand grip for more bicep. Pause 1s at top.' },
+        ],
+      },
+      {
+        label: 'DAY 3', sub: 'LEGS', color: '#C8A87E',
+        note: 'Pushed harder than before. Weighted pistol squat opens the session. Nordic curl sets increased. Jump squats for power that calisthenics can deliver that KB goblet squat cannot match for explosiveness.',
+        exercises: [
+          { name: 'Weighted Pistol Squat', sets: '5', reps: '5–6 each', muscles: 'Quads, Glutes (unilateral)', rpe: 'RPE 9', hard: true, note: 'Hold a plate or wear a weighted vest. Moved to first position — heaviest and most demanding movement while fresh. Full depth. 3s eccentric. This is the king of calisthenics leg work. Most people can\'t do a clean pistol at all — if you can, add weight.' },
+          { name: 'Bulgarian Split Squat (weighted)', sets: '4', reps: '10–12 each', muscles: 'Quads, Glutes', rpe: 'RPE 8', hard: true, note: 'Weighted vest or hold a plate at chest. Rear foot elevated. 3s eccentric. Volume after pistol squats. Second unilateral movement.' },
+          { name: 'Nordic Hamstring Curl', sets: '4', reps: '4–8', muscles: 'Hamstrings (eccentric)', rpe: 'RPE 9', hard: true, note: 'Increased to 4 sets — this is one of the most effective hamstring exercises that exists, research is clear on this. Anchor feet, lower your body using hamstrings only. Use hands to catch yourself at the bottom. Gets harder as you get better.' },
+          { name: 'Jump Squat (explosive)', sets: '4', reps: '12', muscles: 'Quads, Glutes, Calves (power)', rpe: 'RPE 8', hard: false, note: 'Pause 2s at the bottom, then explode. Land softly. This is where calisthenics legs beat KB legs for power development — unloaded jump squats develop more fast-twitch than KB goblet jumps at the same RPE.' },
+          { name: 'Single-Leg Calf Raise (4s tempo)', sets: '4', reps: '15–20 each', muscles: 'Calves', rpe: 'RPE 7', hard: false, note: '4s up, 4s down, 2s pause at stretch. Full range. Tempo makes this genuinely hard.' },
+          { name: 'Dragon Flag Progression', sets: '4', reps: '5–8', muscles: 'Full Core, Hip Flexors', rpe: 'RPE 9', hard: true, note: 'Increased to 4 sets. Tuck → single leg extended → full flag. One of the hardest core movements. Builds visible abs and core control. Non-negotiable on this day.' },
+        ],
+      },
+      {
+        label: 'DAY 4', sub: 'FULL BODY', color: '#7EC87E',
+        note: 'Skill and strength. Muscle-up anchors the session. Hardest calisthenics day — full-body demand from every movement.',
+        exercises: [
+          { name: 'Muscle-Up Progression', sets: '5', reps: '3–5 or max', muscles: 'Full Upper Body', rpe: 'RPE 9', hard: true, note: 'Increased to 5 sets. If you can\'t muscle-up: explosive chest-to-bar pull-up, then separate dip. If you can: add weight. The muscle-up is the ultimate upper body calisthenics movement — vertical and horizontal pull plus a dip in one movement. Nothing else in calisthenics hits this much at once.' },
+          { name: 'Handstand Push-Up Progression', sets: '4', reps: '5–8', muscles: 'Shoulders, Triceps', rpe: 'RPE 8–9', hard: true, note: 'Increased to 4 sets. Wall HSPU → freestanding → weighted HSPU. The vertical press — builds serious shoulder development. Progress wherever you are in the progression.' },
+          { name: 'One-Arm Push-Up Progression', sets: '3', reps: '5–6 each', muscles: 'Chest, Triceps (unilateral)', rpe: 'RPE 8', hard: true, note: 'Archer → elevated one-arm → full one-arm. Unilateral chest strength. Different from dips — builds the type of functional strength that transfers to sport.' },
+          { name: 'Weighted Pull-Up (heavy)', sets: '4', reps: '3–4', muscles: 'Lats, Biceps', rpe: 'RPE 9', hard: true, note: 'Increased to 4 sets. Heaviest weight you can handle for clean reps. Strength focus — fewer reps than Day 2. This is where you set PRs.' },
+          { name: 'Pistol Squat (weighted)', sets: '3', reps: '5–6 each', muscles: 'Quads, Glutes', rpe: 'RPE 8–9', hard: false, note: 'Hold a plate or wear a vest. Second leg session — strength focus vs Day 3 volume.' },
+        ],
+        finisher: {
+          name: '12-Min Calisthenics Density Finisher',
+          desc: '4 rounds: 5 explosive pull-ups (chest to bar) → 8 dips → 15 jump squats → 10 push-ups (any hard variation) → 30s rest. Move fast. By round 4 every rep should be hard. This is where the conditioning happens.'
+        }
+      },
+    ],
+  },
+};
+
+let currentPlan = 'gym';
+let currentDayIdx = 0;
+let openExIdx = null;
+
+function switchPlan(plan) {
+  currentPlan = plan;
+  currentDayIdx = 0;
+  openExIdx = null;
+  document.querySelectorAll('.plan-btn').forEach((b, i) => {
+    b.classList.toggle('active', ['gym','kb','cal'][i] === plan);
+  });
+  document.documentElement.style.setProperty('--theme', PLANS[plan].theme);
+  render();
+}
+
+function switchDay(idx) {
+  currentDayIdx = idx;
+  openExIdx = null;
+  render();
+}
+
+function toggleEx(idx) {
+  openExIdx = openExIdx === idx ? null : idx;
+  renderContent();
+}
+
+function render() {
+  renderDayTabs();
+  renderContent();
+}
+
+function renderDayTabs() {
+  const plan = PLANS[currentPlan];
+  document.getElementById('day-tabs').innerHTML = plan.days.map((d, i) => `
+    <button class="day-tab ${i === currentDayIdx ? 'active' : ''}"
+      onclick="switchDay(${i})"
+      style="${i === currentDayIdx ? `background:${d.color};border-color:${d.color}` : ''}">
+      ${d.label}<span class="day-sub">${d.sub}</span>
+    </button>
+  `).join('');
+}
+
+function renderContent() {
+  const plan = PLANS[currentPlan];
+  const day = plan.days[currentDayIdx];
+  const theme = day.color;
+
+  let html = `
+    <div class="progress-note"><p><strong>Progress rule:</strong> ${plan.progressNote}</p></div>
+    <div class="day-label" style="color:${theme}">${day.label} — ${day.sub}</div>
+    <div class="day-note">${day.note}</div>
+  `;
+
+  if (day.ceiling) {
+    html += `<div class="ceiling-note">⚠ ${day.ceiling}</div>`;
+  }
+
+  day.exercises.forEach((ex, i) => {
+    html += `
+      <div class="ex-card ${openExIdx === i ? 'open' : ''} ${ex.hard ? 'hard' : ''}" onclick="toggleEx(${i})">
+        <div class="ex-row">
+          <div>
+            <div class="ex-name">${ex.name}</div>
+            <div class="ex-muscles">${ex.muscles}</div>
+          </div>
+          <div class="ex-right">
+            <div class="ex-sets" style="color:${theme}">${ex.sets} × ${ex.reps}</div>
+            <div class="ex-rpe">${ex.rpe}</div>
+          </div>
+        </div>
+        <div class="ex-note">${ex.note}</div>
+      </div>
+    `;
+  });
+
+  if (day.finisher) {
+    html += `
+      <div class="finisher">
+        <div class="finisher-label" style="color:${theme}">⚡ CONDITIONING FINISHER</div>
+        <div class="finisher-name">${day.finisher.name}</div>
+        <div class="finisher-desc">${day.finisher.desc}</div>
+      </div>
+    `;
+  }
+
+  html += `<div class="tap-hint">TAP EXERCISE FOR COACHING NOTES · RED BORDER = KEY MOVEMENT</div>`;
+  document.getElementById('content').innerHTML = html;
+}
+
+document.documentElement.style.setProperty('--theme', PLANS[currentPlan].theme);
+render();
+</script>
+</body>
+</html>
